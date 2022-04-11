@@ -97,7 +97,7 @@
 
 ## 사용 알고리즘
 
-1. bird's eye view -\> sliding window
+1. bird's eye view -\> [sliding window](https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.mdpi.com%2F1424-8220%2F19%2F14%2F3166&psig=AOvVaw3dgcm4vjtKvEwXFY-1ojXB&ust=1649769511140000&source=images&cd=vfe&ved=0CAsQjhxqFwoTCJjaxPGRjPcCFQAAAAAdAAAAABAJ)
  
 <img src="https://www.mdpi.com/sensors/sensors-19-03166/article_deploy/html/images/sensors-19-03166-g012.png" width="50%">
 
@@ -105,16 +105,18 @@
 
 <img src="https://ars.els-cdn.com/content/image/1-s2.0-S0045790620305085-gr1.jpg" width="50%">
 
-3. Deep learnging + RANSAC
+3. [Deep learnging](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMCl79-Jxmus3idtZDypeyTOc4ss5H96VjsQ&usqp=CAU) + RANSAC 
 
 <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMCl79-Jxmus3idtZDypeyTOc4ss5H96VjsQ&usqp=CAU">
 
-4. V-ROI
+- [instance segmentation](https://www.google.com/url?sa=i&url=https%3A%2F%2Fpaperswithcode.com%2Fpaper%2Ftowards-end-to-end-lane-detection-an-instance&psig=AOvVaw3dgcm4vjtKvEwXFY-1ojXB&ust=1649769511140000&source=images&cd=vfe&ved=0CAsQjhxqFwoTCJjaxPGRjPcCFQAAAAAdAAAAABAy)
+
+
+4. [V-ROI](https://github.com/Yeowoolee/OpenCV-Lane-Detection)
 
 <img src="https://user-images.githubusercontent.com/33013780/162751237-760413eb-4d25-44b7-8c8e-f6c69a116dac.png" width="300px">
 <img src="https://user-images.githubusercontent.com/33013780/162750624-38287654-3b98-4132-a8ed-d54cf0672087.png" width="300px"> 
 
-- https://github.com/Yeowoolee/OpenCV-Lane-Detection
 - https://yeowool0217.tistory.com/558?category=803755
 
 <br>
