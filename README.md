@@ -98,12 +98,13 @@
 ## 사용 알고리즘
 
 1. bird's eye view -\> [sliding window](https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.mdpi.com%2F1424-8220%2F19%2F14%2F3166&psig=AOvVaw3dgcm4vjtKvEwXFY-1ojXB&ust=1649769511140000&source=images&cd=vfe&ved=0CAsQjhxqFwoTCJjaxPGRjPcCFQAAAAAdAAAAABAJ)
- 
+
 <img src="https://www.mdpi.com/sensors/sensors-19-03166/article_deploy/html/images/sensors-19-03166-g012.png" width="50%">
 
 2. Hough transform + **RANSAC**
 
 <img src="https://ars.els-cdn.com/content/image/1-s2.0-S0045790620305085-gr1.jpg" width="50%">
+<img src="https://user-images.githubusercontent.com/33013780/162755205-554cf4b9-cc64-40a8-b084-8854fbfb184b.png" width="40%">
 
 3. [Deep learnging](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMCl79-Jxmus3idtZDypeyTOc4ss5H96VjsQ&usqp=CAU) + RANSAC 
 
