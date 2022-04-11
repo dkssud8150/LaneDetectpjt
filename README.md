@@ -12,12 +12,6 @@
 
 처리하기 다소 어려운 영상들을 직접 처리해봄으로써 다양한 환경에서의 영상 처리 완료를 목표로 한다. 처리가 어려운 상황을 선정해서 해당 상황에서도 잘 동작하도록 만들어야 할 것이다. 예를 들어 아래의 [예외 상황](https://github.com/dkssud8150/LaneDetectpjt/edit/jhyoon/README.md#%EC%98%88%EC%99%B8-%EC%83%81%ED%99%A9-%EC%B2%98%EB%A6%AC)에 대해 2~3가지를 선정해서 그에 대해 잘 처리되도록 알고리즘을 짠다. 또는 허프 변환 이외에 다른 알고리즘을 사용해보거나, 부가적인 기능을 새롭게 추가해보면 좋을 것 깉다.
 
-<<<<<<< HEAD
-# 프로젝트 기획
-
-## 프로젝트 목표
-해결하려는 문제를 간단히 요약하세요. 이 문제가 해결되어야 하는 이유는 무엇인가요?
-=======
 ---
 
 <br>
@@ -103,23 +97,52 @@
 
 ## 사용 알고리즘
 
-1. bird's eye view -\> [sliding window](https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.mdpi.com%2F1424-8220%2F19%2F14%2F3166&psig=AOvVaw3dgcm4vjtKvEwXFY-1ojXB&ust=1649769511140000&source=images&cd=vfe&ved=0CAsQjhxqFwoTCJjaxPGRjPcCFQAAAAAdAAAAABAJ)
+### bird's eye view -\> **[sliding window](https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.mdpi.com%2F1424-8220%2F19%2F14%2F3166&psig=AOvVaw3dgcm4vjtKvEwXFY-1ojXB&ust=1649769511140000&source=images&cd=vfe&ved=0CAsQjhxqFwoTCJjaxPGRjPcCFQAAAAAdAAAAABAJ)**
 
 <img src="https://www.mdpi.com/sensors/sensors-19-03166/article_deploy/html/images/sensors-19-03166-g012.png" width="50%">
 
-2. Hough transform + **RANSAC**
+<br>
+
+- 알고리즘 순서
+1. ROI 설정
+2. perspective transform
+3. hsv -\> split and using only `V`
+4. inverse
+5. brightness processing
+6. gaussian
+7. inRange
+8. histogram -\> argmax abount left and right -\> sliding
+
+<br>
+
+<br>
+
+---
+
+### Hough transform + **RANSAC**
 
 <img src="https://ars.els-cdn.com/content/image/1-s2.0-S0045790620305085-gr1.jpg" width="50%">
 <img src="https://user-images.githubusercontent.com/33013780/162755205-554cf4b9-cc64-40a8-b084-8854fbfb184b.png" width="40%">
 
-3. [Deep learnging](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMCl79-Jxmus3idtZDypeyTOc4ss5H96VjsQ&usqp=CAU) + RANSAC 
+<br>
+
+<br>
+
+---
+
+### [Deep learnging](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMCl79-Jxmus3idtZDypeyTOc4ss5H96VjsQ&usqp=CAU) + RANSAC 
 
 <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMCl79-Jxmus3idtZDypeyTOc4ss5H96VjsQ&usqp=CAU">
 
 - [instance segmentation](https://www.google.com/url?sa=i&url=https%3A%2F%2Fpaperswithcode.com%2Fpaper%2Ftowards-end-to-end-lane-detection-an-instance&psig=AOvVaw3dgcm4vjtKvEwXFY-1ojXB&ust=1649769511140000&source=images&cd=vfe&ved=0CAsQjhxqFwoTCJjaxPGRjPcCFQAAAAAdAAAAABAy)
 
+<br>
 
-4. [V-ROI](https://github.com/Yeowoolee/OpenCV-Lane-Detection)
+<br>
+
+---
+
+### [V-ROI](https://github.com/Yeowoolee/OpenCV-Lane-Detection)
 
 <img src="https://user-images.githubusercontent.com/33013780/162750624-38287654-3b98-4132-a8ed-d54cf0672087.png" width="300px"> 
 <img src="https://user-images.githubusercontent.com/33013780/162751237-760413eb-4d25-44b7-8c8e-f6c69a116dac.png" width="300px">
@@ -130,36 +153,7 @@
 <br>
 
 <br>
->>>>>>> 1da6715f5a9b2017b41b2d03dc9e15ce55bb72e0
 
-## 프로젝트에 사용한 알고리즘
-프로젝트에 사용한 알고리즘과 이 알고리즘을 선택한 이유는 무엇인가요?
-
-<br>
-
-# 프로젝트 결과
-
-## 최종 결과
-
-프로젝트 결과에 대해 사진, 코드 모두 첨부해도 좋아요! 자유롭게 결과를 설명해주세요. 
-
-## 협업 과정
-
-팀원과 어떻게 협업하였나요?
-
-## 이슈사항
-
-프로젝트를 하면서 가장 어려웠던 부분은 무엇이었나요?
-
-<br>
-
-# 향후 작업 및 소감(선택)
-
-프로젝트가 끝난 이후에도 더 작업을 진행한다면 어떤 부분들을 할 예정인가요?
-
-<br>
-
-<br>
 
 ---
 
