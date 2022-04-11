@@ -89,6 +89,26 @@
 - 또는 차선은 연속적인 선이므로 지난번 위치를 재사용
 - 새로 찾은 차선의 위치가 너무 많이 차이가 날 경우 갑자기 위치가 크게 바뀔 수 없기 때문에 한계값을 정해 이를 넘어갈 경우 무시하고 지난번 위치를 재사용
 
+---
+
+<br>
+
+<br>
+
+## 사용 알고리즘
+
+1. bird's eye view -\> sliding window
+ 
+<img src="https://www.mdpi.com/sensors/sensors-19-03166/article_deploy/html/images/sensors-19-03166-g012.png">
+
+2. Hough transform + **RANSAC**
+
+<img src="https://ars.els-cdn.com/content/image/1-s2.0-S0045790620305085-gr1.jpg">
+
+
+<br>
+
+<br>
 
 
 ---
