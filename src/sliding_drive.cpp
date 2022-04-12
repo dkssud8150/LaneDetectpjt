@@ -4,39 +4,87 @@
 using namespace std;
 using namespace cv;
 
+vector<int> n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, int w = 320, int h = 240, int nwindows = 8, int window_width = 40, int window_height = 30, int margin = 15) {
+	vector<int> lx, ly, rx, ry;
 
-Mat calcGrayHist(const Mat& img)
-{
-	CV_Assert(img.type() == CV_8UC1);
+	// window search
+	for (int window = 0; window < nwindows; window++) {
+		// window y up value / low value
+		int win_y_high = h - (window + 1) * window_height;
+		int win_y_low = h - window * window_height;
 
-	Mat hist;
-	int channels[] = { 0 };
-	int dims = 1;
-	const int histSize[] = { 256 };
-	float graylevel[] = { 0, 256 };
-	const float* ranges[] = { graylevel };
+		//
+		int win_x_leftb_right = left_start + margin;
+		int win_x_leftb_left = left_start - margin;
 
-	calcHist(&img, 1, channels, noArray(), hist, dims, histSize, ranges);
+		int win_x_rightb_right = right_start + margin;
+		int win_x_rightb_left = right_start - margin;
 
-	return hist;
-}
+		// draw window at v_thres
+		rectangle(roi, Rect(win_x_leftb_left, win_y_high, window_width, window_height), (0, 0, 255), 2);
+		rectangle(roi, Rect(win_x_rightb_left, win_y_high, window_width, window_height), (0, 0, 255), 2);
 
-Mat getGrayHistImage(const Mat& hist)
-{
-	CV_Assert(hist.type() == CV_32FC1);
-	CV_Assert(hist.size() == Size(1, 256));
+		// box mid point
+		int mid = (win_y_low + win_y_high) / 2;
 
-	double histMax = 0.;
-	minMaxLoc(hist, 0, &histMax);
+		int pixel_thres = window_width * 0.35;
 
-	Mat imgHist(100, 256, CV_8UC1, Scalar(255));
-	for (int i = 0; i < 256; i++) {
-		line(imgHist, Point(i, 100),
-			Point(i, 100 - cvRound(hist.at<float>(i, 0) * 100 / histMax)), Scalar(0));
+		// window의 위치를 고려해서 벡터에 집어넣으면 불필요한 부분이 많아질 수 있다. 어차피 0의 개수를 구하기 위한 벡터이므로 0부터 window_width 개수만큼 생성
+		int li = 0; int ll = 0, lr = 0;
+		vector<int> lmid_vector(window_width);
+		for (auto x = win_x_leftb_left; x < win_x_leftb_right; x++) {
+			li++;
+			lmid_vector[li] = v_thres.at<uchar>(mid, x);
+
+			// 차선의 중앙을 계산하기 위해 255 시작점과 255 끝점을 계산
+			if (v_thres.at<uchar>(mid, x) == 255 && ll == 0) {
+				ll = x;
+				lr = x;
+			}
+			if (v_thres.at<uchar>(mid, x) == 255 && lr != 0) {
+				lr = x;
+			}
+		}
+
+		// window 중앙을 기준으로 0이 아닌 픽셀의 개수를 구함
+		int lnonzero = countNonZero(lmid_vector);
+
+		// 255인 픽셀의 개수가 threshold를 넘으면, 방금 구했던 255 픽셀 시작 지점과 끝 지점의 중앙 값을 다음 window의 중앙으로 잡는다.
+		if (lnonzero > pixel_thres) {
+			left_start = (ll + lr) / 2;
+		}
+
+		int ri = 0; int rl = 0, rr = 0;
+		vector<int> rmid_vector(window_width);
+		for (auto x = win_x_rightb_left; x < win_x_rightb_right; x++) {
+			ri++;
+			rmid_vector[ri] = v_thres.at<uchar>(mid, x);
+			if (v_thres.at<uchar>(mid, x) == 255 && rl == 0) {
+				rl = x;
+				rr = x;
+			}
+			if (v_thres.at<uchar>(mid, x) == 255 && lr != 0) {
+				rr = x;
+			}
+		}
+
+		int rnonzero = countNonZero(rmid_vector);
+
+
+		if (rnonzero > pixel_thres) {
+			right_start = (rl + rr) / 2;
+		}
+
+		// 직선의 방정식을 구하기 위한 vector, 현재는 특정 offset에 대한 차선 인식을 수행할 것이므로 사용 x
+		lx.push_back(left_start);
+		ly.push_back((int)((win_y_high + win_y_low) / 2));
+		rx.push_back(right_start);
+		ry.push_back((int)((win_y_high + win_y_low) / 2));
 	}
 
-	return imgHist;
+	return lx, ly, rx, ry;
 }
+
 
 int main()
 {
@@ -52,17 +100,24 @@ int main()
 	int height = cvRound(cap.get(CAP_PROP_FRAME_HEIGHT));
 
 	// warped image size
-	int w = (int)width / 3, h = (int)height / 3;
+	int w = (int)width / 2, h = (int)height / 2;
 
 	// point about warp transform
 	vector<Point2f> src_pts(4);
 	vector<Point2f> dst_pts(4);
-	src_pts[0] = Point2f(10, 395); src_pts[1] = Point2f(250, 250); src_pts[2] = Point2f(360, 250); src_pts[3] = Point2f(570, 395);
+
+	// 파란색 선 보이게 하는 roi
+	src_pts[0] = Point2f(0, 420); src_pts[1] = Point2f(213, 280); src_pts[2] = Point2f(395, 280); src_pts[3] = Point2f(595, 420);
+
+	//	src_pts[0] = Point2f(10, 395); src_pts[1] = Point2f(250, 250); src_pts[2] = Point2f(360, 250); src_pts[3] = Point2f(570, 395);
 	dst_pts[0] = Point2f(0, h - 1); dst_pts[1] = Point2f(0, 0); dst_pts[2] = Point2f(w - 1, 0); dst_pts[3] = Point2f(w - 1, h - 1);
 
 	// point about polylines
 	vector<Point> pts(4);
-	pts[0] = Point(10, 395); pts[1] = Point(250, 250); pts[2] = Point(360, 250); pts[3] = Point(570, 395);
+	//	pts[0] = Point(10, 395); pts[1] = Point(250, 250); pts[2] = Point(360, 250); pts[3] = Point(570, 395);
+
+	pts[0] = Point(0, 420); pts[1] = Point(213, 280); pts[2] = Point(395, 280); pts[3] = Point(595, 420);
+
 
 
 	Mat per_mat = getPerspectiveTransform(src_pts, dst_pts);
@@ -132,7 +187,7 @@ int main()
 
 
 		//		imshow("hsv", hsv);
-		imshow("v_plane", v_plane);
+		//		imshow("v_plane", v_plane);
 		imshow("v_thres", v_thres);
 
 
@@ -173,10 +228,29 @@ int main()
 #endif	
 
 		// define constant for sliding window
-		int nwindows = 9;
-		int margin = 12;
-		int minpixel = 5;
+		int nwindows = 8;
+		int window_width = (int)(w / nwindows);
+		int window_height = (int)(h / nwindows);
+		int margin = window_width / 2;
 
+		// define offset and draw line
+		int offset = 228; // 180
+		line(v_thres, Point(0, offset), Point(w, offset), (255, 0, 255), 1);
+
+		// histogram -> 열별로 더해서 가장 높은 값을 찾아 시작점으로 잡는다.
+		vector<int> hist(w);
+		for (int x = 0; x < w; x++) {
+			for (int y = 0; y < h; y++) {
+				hist[x] += v_thres.at<uchar>(y, x);
+			}
+		}
+
+		int left_start = max_element(hist.begin(), hist.begin() + w / 2) - hist.begin();
+		int right_start = max_element(hist.begin() + w / 2, hist.end()) - hist.begin();
+
+
+		vector<int> lx, ly, rx, ry;
+		lx, ly, rx, ry = n_window_sliding(left_start, right_start, roi, v_thres);
 
 
 
