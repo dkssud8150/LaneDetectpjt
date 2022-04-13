@@ -4,8 +4,9 @@
 using namespace std;
 using namespace cv;
 
-vector<int> n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, int w = 320, int h = 240, int nwindows = 8, int window_width = 40, int window_height = 30, int margin = 15) {
+Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, int w = 320, int h = 240, int nwindows = 8, int window_width = 40, int window_height = 30, int margin = 15) {
 	vector<int> lx, ly, rx, ry;
+	vector<Point> lpoints(nwindows), rpoints(nwindows);
 
 	// window search
 	for (int window = 0; window < nwindows; window++) {
@@ -21,8 +22,8 @@ vector<int> n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thr
 		int win_x_rightb_left = right_start - margin;
 
 		// draw window at v_thres
-		rectangle(roi, Rect(win_x_leftb_left, win_y_high, window_width, window_height), (0, 0, 255), 2);
-		rectangle(roi, Rect(win_x_rightb_left, win_y_high, window_width, window_height), (0, 0, 255), 2);
+		rectangle(v_thres, Rect(win_x_leftb_left, win_y_high, window_width, window_height), (0, 0, 255), 2);
+		rectangle(v_thres, Rect(win_x_rightb_left, win_y_high, window_width, window_height), (0, 0, 255), 2);
 
 		// box mid point
 		int mid = (win_y_low + win_y_high) / 2;
@@ -76,15 +77,34 @@ vector<int> n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thr
 		}
 
 		// 직선의 방정식을 구하기 위한 vector, 현재는 특정 offset에 대한 차선 인식을 수행할 것이므로 사용 x
-		lx.push_back(left_start);
-		ly.push_back((int)((win_y_high + win_y_low) / 2));
-		rx.push_back(right_start);
-		ry.push_back((int)((win_y_high + win_y_low) / 2));
+
+		lpoints[window] = Point(left_start, (int)((win_y_high + win_y_low) / 2));
+		rpoints[window] = Point(right_start, (int)((win_y_high + win_y_low) / 2));
 	}
 
-	return lx, ly, rx, ry;
+	Vec4f left_line, right_line;
+	fitLine(lpoints, left_line, DIST_L2, 0, 0.01, 0.01); // 출력의 0,1 번째 인자는 단위벡터, 3,4번째 인자는 선 위의 한 점
+	fitLine(rpoints, right_line, DIST_L2, 0, 0.01, 0.01);
+
+
+	int lx0 = left_line[2], ly0 = left_line[3]; // 선 위의 한 점
+	int lx1 = lx0 - 300 * left_line[0], ly1 = ly0 - 300 * left_line[1]; // 단위 벡터 -> 그리고자 하는 길이를 빼주거나 더해줌
+
+	int rx0 = right_line[2], ry0 = right_line[3];
+	int rx1 = rx0 - 300 * right_line[0], ry1 = ry0 - 300 * right_line[1];
+
+	line(roi, Point(lx0, ly0), Point(lx1, ly1), Scalar(255, 0, 0), 2);
+	line(roi, Point(rx0, ry0), Point(rx1, ry1), Scalar(255, 0, 0), 2);
+
+	return left_line, right_line;
 }
 
+void draw_line(Mat frame, Mat roi, Vec4f left_line, Vec4f right_line, Mat per_mat_tosrc, int width = 640, int height = 480) {
+	Mat newframe;
+	warpPerspective(roi, newframe, per_mat_tosrc, Size(width, height), INTER_LINEAR);
+
+	imshow("newframe", newframe);
+}
 
 int main()
 {
@@ -107,20 +127,22 @@ int main()
 	vector<Point2f> dst_pts(4);
 
 	// 파란색 선 보이게 하는 roi
-	src_pts[0] = Point2f(0, 420); src_pts[1] = Point2f(213, 280); src_pts[2] = Point2f(395, 280); src_pts[3] = Point2f(595, 420);
+//	src_pts[0] = Point2f(0, 420); src_pts[1] = Point2f(213, 280); src_pts[2] = Point2f(395, 280); src_pts[3] = Point2f(595, 420);
 
-	//	src_pts[0] = Point2f(10, 395); src_pts[1] = Point2f(250, 250); src_pts[2] = Point2f(360, 250); src_pts[3] = Point2f(570, 395);
+	// 파란색 선 없는 roi
+	src_pts[0] = Point2f(10, 395); src_pts[1] = Point2f(250, 250); src_pts[2] = Point2f(360, 250); src_pts[3] = Point2f(570, 395);
 	dst_pts[0] = Point2f(0, h - 1); dst_pts[1] = Point2f(0, 0); dst_pts[2] = Point2f(w - 1, 0); dst_pts[3] = Point2f(w - 1, h - 1);
 
 	// point about polylines
 	vector<Point> pts(4);
-	//	pts[0] = Point(10, 395); pts[1] = Point(250, 250); pts[2] = Point(360, 250); pts[3] = Point(570, 395);
+	pts[0] = Point(10, 395); pts[1] = Point(250, 250); pts[2] = Point(360, 250); pts[3] = Point(570, 395);
 
-	pts[0] = Point(0, 420); pts[1] = Point(213, 280); pts[2] = Point(395, 280); pts[3] = Point(595, 420);
+	//	pts[0] = Point(0, 420); pts[1] = Point(213, 280); pts[2] = Point(395, 280); pts[3] = Point(595, 420);
 
 
 
-	Mat per_mat = getPerspectiveTransform(src_pts, dst_pts);
+	Mat per_mat_todst = getPerspectiveTransform(src_pts, dst_pts);
+	Mat per_mat_tosrc = getPerspectiveTransform(dst_pts, src_pts);
 
 	Mat frame, roi;
 	while (true) {
@@ -130,7 +152,7 @@ int main()
 
 		// perspective transform
 		Mat roi;
-		warpPerspective(frame, roi, per_mat, Size(w, h), INTER_LINEAR);
+		warpPerspective(frame, roi, per_mat_todst, Size(w, h), INTER_LINEAR);
 
 		// roi box indicate
 		polylines(frame, pts, true, Scalar(255, 255, 0), 2);
@@ -234,7 +256,7 @@ int main()
 		int margin = window_width / 2;
 
 		// define offset and draw line
-		int offset = 228; // 180
+		int offset = 180; // 228
 		line(v_thres, Point(0, offset), Point(w, offset), (255, 0, 255), 1);
 
 		// histogram -> 열별로 더해서 가장 높은 값을 찾아 시작점으로 잡는다.
@@ -248,11 +270,10 @@ int main()
 		int left_start = max_element(hist.begin(), hist.begin() + w / 2) - hist.begin();
 		int right_start = max_element(hist.begin() + w / 2, hist.end()) - hist.begin();
 
+		Vec4f left_line, right_line;
+		left_line, right_line = n_window_sliding(left_start, right_start, roi, v_thres);
 
-		vector<int> lx, ly, rx, ry;
-		lx, ly, rx, ry = n_window_sliding(left_start, right_start, roi, v_thres);
-
-
+		draw_line(frame, roi, left_line, right_line, per_mat_tosrc);
 
 		imshow("src", frame);
 		imshow("roi", roi);
