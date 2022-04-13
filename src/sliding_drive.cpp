@@ -49,7 +49,6 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 
 		// window안에서 0이 아닌 픽셀의 개수를 구함
 		int lnonzero = countNonZero(lhigh_vector);
-
 		// 255인 픽셀의 개수가 threshold를 넘으면, 방금 구했던 255 픽셀 시작 지점과 끝 지점의 중앙 값을 다음 window의 중앙으로 잡는다.
 		if (lnonzero > pixel_thres) {
 			left_start = (ll + lr) / 2;
@@ -70,8 +69,6 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 		}
 
 		int rnonzero = countNonZero(rhigh_vector);
-
-
 		if (rnonzero > pixel_thres) {
 			right_start = (rl + rr) / 2;
 		}
@@ -86,9 +83,16 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 	fitLine(lpoints, left_line, DIST_L2, 0, 0.01, 0.01); // 출력의 0,1 번째 인자는 단위벡터, 3,4번째 인자는 선 위의 한 점
 	fitLine(rpoints, right_line, DIST_L2, 0, 0.01, 0.01);
 
+	if (left_line[1] > 0) {
+		left_line[1] = -left_line[1];
+	}
 
 	int lx0 = left_line[2], ly0 = left_line[3]; // 선 위의 한 점
 	int lx1 = lx0 - 300 * left_line[0], ly1 = ly0 - 300 * left_line[1]; // 단위 벡터 -> 그리고자 하는 길이를 빼주거나 더해줌
+
+	if (right_line[1] > 0) {
+		right_line[1] = -right_line[1];
+	}
 
 	int rx0 = right_line[2], ry0 = right_line[3];
 	int rx1 = rx0 - 300 * right_line[0], ry1 = ry0 - 300 * right_line[1];
@@ -130,12 +134,12 @@ int main()
 //	src_pts[0] = Point2f(0, 420); src_pts[1] = Point2f(213, 280); src_pts[2] = Point2f(395, 280); src_pts[3] = Point2f(595, 420);
 
 	// 파란색 선 없는 roi
-	src_pts[0] = Point2f(10, 395); src_pts[1] = Point2f(203, 280); src_pts[2] = Point2f(400, 280); src_pts[3] = Point2f(570, 395);
+	src_pts[0] = Point2f(10, 395); src_pts[1] = Point2f(200, 280); src_pts[2] = Point2f(400, 280); src_pts[3] = Point2f(570, 395);
 	dst_pts[0] = Point2f(0, h - 1); dst_pts[1] = Point2f(0, 0); dst_pts[2] = Point2f(w - 1, 0); dst_pts[3] = Point2f(w - 1, h - 1);
 
 	// point about polylines
 	vector<Point> pts(4);
-	pts[0] = Point(10, 395); pts[1] = Point(203, 280); pts[2] = Point(400, 280); pts[3] = Point(570, 395);
+	pts[0] = Point(10, 395); pts[1] = Point(200, 280); pts[2] = Point(400, 280); pts[3] = Point(570, 395);
 
 	//	pts[0] = Point(0, 420); pts[1] = Point(213, 280); pts[2] = Point(395, 280); pts[3] = Point(595, 420);
 
@@ -186,7 +190,7 @@ int main()
 
 #elif 1	// 2-1 hsv -> gaussian -> inRange -> canny
 		Mat hsv, v_thres;
-		int lane_binary_thres = 155; // contrast : 185
+		int lane_binary_thres = 130; // contrast : 185
 		cvtColor(roi, hsv, COLOR_BGR2HSV);
 
 		// split H/S/V
@@ -200,7 +204,7 @@ int main()
 		// brightness control
 		int means = mean(v_plane)[0];
 		// v_plane.convertTo(v_plane, -1, 1.5, 128 - means); // roi = roi + (128 - m);
-		v_plane = v_plane + (128 - means);
+		v_plane = v_plane + (100 - means);
 
 		GaussianBlur(v_plane, v_plane, Size(), 1.0);
 
