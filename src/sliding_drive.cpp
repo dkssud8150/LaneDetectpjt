@@ -130,12 +130,12 @@ int main()
 //	src_pts[0] = Point2f(0, 420); src_pts[1] = Point2f(213, 280); src_pts[2] = Point2f(395, 280); src_pts[3] = Point2f(595, 420);
 
 	// 파란색 선 없는 roi
-	src_pts[0] = Point2f(10, 395); src_pts[1] = Point2f(250, 250); src_pts[2] = Point2f(360, 250); src_pts[3] = Point2f(570, 395);
+	src_pts[0] = Point2f(10, 395); src_pts[1] = Point2f(203, 280); src_pts[2] = Point2f(400, 280); src_pts[3] = Point2f(570, 395);
 	dst_pts[0] = Point2f(0, h - 1); dst_pts[1] = Point2f(0, 0); dst_pts[2] = Point2f(w - 1, 0); dst_pts[3] = Point2f(w - 1, h - 1);
 
 	// point about polylines
 	vector<Point> pts(4);
-	pts[0] = Point(10, 395); pts[1] = Point(250, 250); pts[2] = Point(360, 250); pts[3] = Point(570, 395);
+	pts[0] = Point(10, 395); pts[1] = Point(203, 280); pts[2] = Point(400, 280); pts[3] = Point(570, 395);
 
 	//	pts[0] = Point(0, 420); pts[1] = Point(213, 280); pts[2] = Point(395, 280); pts[3] = Point(595, 420);
 
@@ -170,7 +170,7 @@ int main()
 		int means = mean(v_plane)[0];
 		v_plane = v_plane + (128 - means);
 		GaussianBlur(v_plane, v_plane, Size(), 1.0);
-		inRange(v_plane, lane_binary_thres, 255, v_thres);
+		threshold(v_plane, v_thres, lane_binary_thres, 255, THRESH_OTSU);
 		imshow("v_thres", v_thres);
 
 #elif 0	// 1-1 grayscale -> gaissian -> canny
@@ -206,10 +206,11 @@ int main()
 		GaussianBlur(v_plane, v_plane, Size(), 1.0);
 
 		inRange(v_plane, lane_binary_thres, 255, v_thres);
+		// OTSU 알고리즘
+//		threshold(v_plane, v_thres, lane_binary_thres, 255, THRESH_OTSU);
 
-
-		//		imshow("hsv", hsv);
-		//		imshow("v_plane", v_plane);
+//		imshow("hsv", hsv);
+//		imshow("v_plane", v_plane);
 		imshow("v_thres", v_thres);
 
 
