@@ -14,7 +14,7 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 		int win_y_high = h - (window + 1) * window_height;
 		int win_y_low = h - window * window_height;
 
-		//
+
 		int win_x_leftb_right = left_start + margin;
 		int win_x_leftb_left = left_start - margin;
 
@@ -22,33 +22,33 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 		int win_x_rightb_left = right_start - margin;
 
 		// draw window at v_thres
-		rectangle(v_thres, Rect(win_x_leftb_left, win_y_high, window_width, window_height), (0, 0, 255), 2);
-		rectangle(v_thres, Rect(win_x_rightb_left, win_y_high, window_width, window_height), (0, 0, 255), 2);
+		rectangle(roi, Rect(win_x_leftb_left, win_y_high, window_width, window_height), (255, 255, 255), 2);
+		rectangle(roi, Rect(win_x_rightb_left, win_y_high, window_width, window_height), (255, 255, 255), 2);
 
 		// box mid point
-		int mid = (win_y_low + win_y_high) / 2;
+		int high = win_y_high + 4;
 
-		int pixel_thres = window_width * 0.35;
+		int pixel_thres = window_width * 0.2;
 
 		// window의 위치를 고려해서 벡터에 집어넣으면 불필요한 부분이 많아질 수 있다. 어차피 0의 개수를 구하기 위한 벡터이므로 0부터 window_width 개수만큼 생성
 		int li = 0; int ll = 0, lr = 0;
-		vector<int> lmid_vector(window_width);
+		vector<int> lhigh_vector(window_width);
 		for (auto x = win_x_leftb_left; x < win_x_leftb_right; x++) {
 			li++;
-			lmid_vector[li] = v_thres.at<uchar>(mid, x);
+			lhigh_vector[li] = v_thres.at<uchar>(high, x);
 
 			// 차선의 중앙을 계산하기 위해 255 시작점과 255 끝점을 계산
-			if (v_thres.at<uchar>(mid, x) == 255 && ll == 0) {
+			if (v_thres.at<uchar>(high, x) == 255 && ll == 0) {
 				ll = x;
 				lr = x;
 			}
-			if (v_thres.at<uchar>(mid, x) == 255 && lr != 0) {
+			if (v_thres.at<uchar>(high, x) == 255 && lr != 0) {
 				lr = x;
 			}
 		}
 
-		// window 중앙을 기준으로 0이 아닌 픽셀의 개수를 구함
-		int lnonzero = countNonZero(lmid_vector);
+		// window안에서 0이 아닌 픽셀의 개수를 구함
+		int lnonzero = countNonZero(lhigh_vector);
 
 		// 255인 픽셀의 개수가 threshold를 넘으면, 방금 구했던 255 픽셀 시작 지점과 끝 지점의 중앙 값을 다음 window의 중앙으로 잡는다.
 		if (lnonzero > pixel_thres) {
@@ -56,20 +56,20 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 		}
 
 		int ri = 0; int rl = 0, rr = 0;
-		vector<int> rmid_vector(window_width);
+		vector<int> rhigh_vector(window_width);
 		for (auto x = win_x_rightb_left; x < win_x_rightb_right; x++) {
 			ri++;
-			rmid_vector[ri] = v_thres.at<uchar>(mid, x);
-			if (v_thres.at<uchar>(mid, x) == 255 && rl == 0) {
+			rhigh_vector[ri] = v_thres.at<uchar>(high, x);
+			if (v_thres.at<uchar>(high, x) == 255 && rl == 0) {
 				rl = x;
 				rr = x;
 			}
-			if (v_thres.at<uchar>(mid, x) == 255 && lr != 0) {
+			if (v_thres.at<uchar>(high, x) == 255 && lr != 0) {
 				rr = x;
 			}
 		}
 
-		int rnonzero = countNonZero(rmid_vector);
+		int rnonzero = countNonZero(rhigh_vector);
 
 
 		if (rnonzero > pixel_thres) {
