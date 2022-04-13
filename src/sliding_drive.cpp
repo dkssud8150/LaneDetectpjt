@@ -8,6 +8,7 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 	vector<int> lx, ly, rx, ry;
 	vector<Point> lpoints(nwindows), rpoints(nwindows);
 
+	int ll = 0, lr = 0; int rl = 0, rr = 0;
 	// window search
 	for (int window = 0; window < nwindows; window++) {
 		// window y up value / low value
@@ -28,11 +29,10 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 		// box mid point
 		int high = win_y_high + 4;
 
-		int pixel_thres = window_width * 0.2;
-
+		int pixel_thres = window_width * 0.4;
+		int li = 0;
 		// window의 위치를 고려해서 벡터에 집어넣으면 불필요한 부분이 많아질 수 있다. 어차피 0의 개수를 구하기 위한 벡터이므로 0부터 window_width 개수만큼 생성
-		int li = 0; int ll = 0, lr = 0;
-		vector<int> lhigh_vector(window_width);
+		vector<int> lhigh_vector(window_width + 1);
 		for (auto x = win_x_leftb_left; x < win_x_leftb_right; x++) {
 			li++;
 			lhigh_vector[li] = v_thres.at<uchar>(high, x);
@@ -55,8 +55,8 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 			left_start = (ll + lr) / 2;
 		}
 
-		int ri = 0; int rl = 0, rr = 0;
-		vector<int> rhigh_vector(window_width);
+		int ri = 0;
+		vector<int> rhigh_vector(window_width + 1);
 		for (auto x = win_x_rightb_left; x < win_x_rightb_right; x++) {
 			ri++;
 			rhigh_vector[ri] = v_thres.at<uchar>(high, x);
@@ -103,7 +103,7 @@ void draw_line(Mat frame, Mat roi, Vec4f left_line, Vec4f right_line, Mat per_ma
 	Mat newframe;
 	warpPerspective(roi, newframe, per_mat_tosrc, Size(width, height), INTER_LINEAR);
 
-	imshow("newframe", newframe);
+	//	imshow("newframe", newframe);
 }
 
 int main()
@@ -120,7 +120,7 @@ int main()
 	int height = cvRound(cap.get(CAP_PROP_FRAME_HEIGHT));
 
 	// warped image size
-	int w = (int)width / 2, h = (int)height / 2;
+	int w = (int)width * 1.5, h = (int)height * 1;
 
 	// point about warp transform
 	vector<Point2f> src_pts(4);
@@ -138,7 +138,6 @@ int main()
 	pts[0] = Point(10, 395); pts[1] = Point(203, 280); pts[2] = Point(400, 280); pts[3] = Point(570, 395);
 
 	//	pts[0] = Point(0, 420); pts[1] = Point(213, 280); pts[2] = Point(395, 280); pts[3] = Point(595, 420);
-
 
 
 	Mat per_mat_todst = getPerspectiveTransform(src_pts, dst_pts);
@@ -214,7 +213,7 @@ int main()
 		imshow("v_thres", v_thres);
 
 
-#elif 0	// 3-1 lab -> gaussian -> inrange -> canny
+#else 0	// 3-1 lab -> gaussian -> inrange -> canny
 		Mat lab, lab_thres, roi_edge;
 		int lane_binary_thres = 130;
 		cvtColor(roi, lab, COLOR_BGR2Lab);
@@ -228,51 +227,44 @@ int main()
 		imshow("lab_thres", lab_thres);
 		imshow("lab_edge", roi_edge);
 
-
-#else	// grayscale -> sobel -> threshold
-		Mat roi_gray;
-		cvtColor(roi, roi_gray, COLOR_BGR2GRAY);
-
-		Mat dx, dy;
-		Sobel(roi, dx, CV_32FC1, 1, 0);
-		Sobel(roi, dy, CV_32FC1, 0, 1);
-
-		Mat mag;
-		magnitude(dx, dy, mag);
-		mag.convertTo(mag, CV_8UC1);
-
-		Mat roi_edge = mag > 65;
-
-		imshow("roi", roi);
-		imshow("mag", mag);
-		imshow("roi_edge", roi_edge);
-
-
 #endif	
 
 		// define constant for sliding window
-		int nwindows = 8;
-		int window_width = (int)(w / nwindows);
+		int nwindows = 15;
 		int window_height = (int)(h / nwindows);
+		int window_width = (int)(window_height * 3);
+
 		int margin = window_width / 2;
 
-		// define offset and draw line
-		int offset = 180; // 228
-		line(v_thres, Point(0, offset), Point(w, offset), (255, 0, 255), 1);
-
-		// histogram -> 열별로 더해서 가장 높은 값을 찾아 시작점으로 잡는다.
-		vector<int> hist(w);
-		for (int x = 0; x < w; x++) {
-			for (int y = 0; y < h; y++) {
-				hist[x] += v_thres.at<uchar>(y, x);
+		// 첫위치 지정
+		int left_l_init = 0, left_r_init = 0;
+		int right_l_init = 0, right_r_init = 0;
+		for (auto x = 0; x < w; x++) {
+			if (x < w / 2) {
+				if (v_thres.at<uchar>(h - 1, x) == 255 && left_l_init == 0) {
+					left_l_init = x;
+					left_r_init = x;
+				}
+				if (v_thres.at<uchar>(h - 1, x) == 255 && left_r_init != 0) {
+					left_r_init = x;
+				}
+			}
+			else {
+				if (v_thres.at<uchar>(h - 1, x) == 255 && right_l_init == 0) {
+					right_l_init = x;
+					right_r_init = x;
+				}
+				if (v_thres.at<uchar>(h - 1, x) == 255 && right_r_init != 0) {
+					right_r_init = x;
+				}
 			}
 		}
 
-		int left_start = max_element(hist.begin(), hist.begin() + w / 2) - hist.begin();
-		int right_start = max_element(hist.begin() + w / 2, hist.end()) - hist.begin();
+		int left_start = (left_l_init + left_r_init) / 2;
+		int right_start = (right_l_init + right_r_init) / 2;
 
 		Vec4f left_line, right_line;
-		left_line, right_line = n_window_sliding(left_start, right_start, roi, v_thres);
+		left_line, right_line = n_window_sliding(left_start, right_start, roi, v_thres, w, h, nwindows, window_width, window_height, margin);
 
 		draw_line(frame, roi, left_line, right_line, per_mat_tosrc);
 
