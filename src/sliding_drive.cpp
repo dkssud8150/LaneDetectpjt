@@ -8,7 +8,7 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 	vector<int> lx, ly, rx, ry;
 	vector<Point> lpoints(nwindows), rpoints(nwindows);
 
-	int ll = 0, lr = 0; int rl = 0, rr = 0;
+	int ll = 0, lr = 0; int rl = 640, rr = 640;
 	// window search
 	for (int window = 0; window < nwindows; window++) {
 		// window y up value / low value
@@ -60,11 +60,11 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 		for (auto x = win_x_rightb_left; x < win_x_rightb_right; x++) {
 			ri++;
 			rhigh_vector[ri] = v_thres.at<uchar>(high, x);
-			if (v_thres.at<uchar>(high, x) == 255 && rl == 0) {
+			if (v_thres.at<uchar>(high, x) == 255 && rl == 640) {
 				rl = x;
 				rr = x;
 			}
-			if (v_thres.at<uchar>(high, x) == 255 && lr != 0) {
+			if (v_thres.at<uchar>(high, x) == 255 && lr != 640) {
 				rr = x;
 			}
 		}
@@ -238,7 +238,7 @@ int main()
 
 		// 첫위치 지정
 		int left_l_init = 0, left_r_init = 0;
-		int right_l_init = 0, right_r_init = 0;
+		int right_l_init = 640, right_r_init = 640;
 		for (auto x = 0; x < w; x++) {
 			if (x < w / 2) {
 				if (v_thres.at<uchar>(h - 1, x) == 255 && left_l_init == 0) {
@@ -250,11 +250,11 @@ int main()
 				}
 			}
 			else {
-				if (v_thres.at<uchar>(h - 1, x) == 255 && right_l_init == 0) {
+				if (v_thres.at<uchar>(h - 1, x) == 255 && right_l_init == 640) {
 					right_l_init = x;
 					right_r_init = x;
 				}
-				if (v_thres.at<uchar>(h - 1, x) == 255 && right_r_init != 0) {
+				if (v_thres.at<uchar>(h - 1, x) == 255 && right_r_init != 640) {
 					right_r_init = x;
 				}
 			}
