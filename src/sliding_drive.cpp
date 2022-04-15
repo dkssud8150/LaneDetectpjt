@@ -168,29 +168,26 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 	int mx1 = mx0 + h * mid_line[0], my1 = my0 + h * mid_line[1];
 	int mx2 = 2 * mx0 - mx1, my2 = 2 * my0 - my1;
 
-	line(roi, Point(lx1, ly1), Point(lx2, ly2), Scalar(0, 0, 255), 3);
-	line(roi, Point(rx1, ry1), Point(rx2, ry2), Scalar(0, 0, 255), 3);
+	line(roi, Point(lx1, ly1), Point(lx2, ly2), Scalar(0, 100, 200), 3);
+	line(roi, Point(rx1, ry1), Point(rx2, ry2), Scalar(0, 100, 200), 3);
 	line(roi, Point(mx1, my1), Point(mx2, my2), Scalar(0, 0, 255), 3);
 
 	return left_line, right_line, mid_line;
 }
 
-void find_xPoint(Mat img, Mat per_mat_tosrc, int& lpos, int& rpos, int ans_offset = 385, int width = 640, int height = 480) {
+void find_xPoint(Mat img, Mat per_mat_tosrc, int& lpos, int& rpos, int ans_offset = 395, int width = 640, int height = 480) {
 	Mat inverse;
 	warpPerspective(img, inverse, per_mat_tosrc, Size(width, height), INTER_LINEAR);
-	vector<int> pos{};
+	imshow("inverse", inverse);
+	vector<int> pos;
 	for (int x = 0; x < width; x++) {
-		if (inverse.at<uchar>(ans_offset, x) == (50, 100, 255))
-		{
+		if (inverse.at<Vec3b>(ans_offset, x) == Vec3b(0, 100, 200))
 			pos.push_back(x);
-		}
 	}
-	if (pos.size() > 0) {
+	if (pos.size()) {
 		rpos = *max_element(pos.begin(), pos.end());
 		lpos = *min_element(pos.begin(), pos.end());
 	}
-	line(inverse, Point(0, ans_offset), Point(640, ans_offset), Scalar(0, 0, 200), 1);
-	imshow("inverse", inverse);
 }
 
 int main()
@@ -305,17 +302,21 @@ int main()
 		imshow("src", frame);
 		imshow("roi", roi);
 
-		if (waitKey(10) == 27) break;
+		
 
+		//csv 파일 생성
 		int frame_number = cap.get(CAP_PROP_POS_FRAMES) - 1;
 		if (frame_number % 30 == 0)
 		{
 			int lpos = 0;
 			int rpos = 640;
+
 			find_xPoint(roi, per_mat_tosrc, lpos, rpos);
 			CSVFILE << index << "," << frame_number << "," << lpos << "," << rpos << endl;
 			index++;
 		}
+
+		if (waitKey(10) == 27) break;
 
 	}
 	cap.release();
