@@ -24,8 +24,8 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 	mpoints[0] = Point((int)((left_start + right_start) / 2), (int)((win_y_high + win_y_low) / 2));
 
 	// init box draw
-	rectangle(roi, Rect(win_x_leftb_left, win_y_high, window_width, window_height), Scalar(0, 0, 255), 2);
-	rectangle(roi, Rect(win_x_rightb_left, win_y_high, window_width, window_height), Scalar(0, 0, 255), 2);
+	rectangle(roi, Rect(win_x_leftb_left, win_y_high, window_width, window_height), Scalar(0, 150, 0), 2);
+	rectangle(roi, Rect(win_x_rightb_left, win_y_high, window_width, window_height), Scalar(150, 0, 0), 2);
 
 
 
@@ -50,6 +50,7 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 		int offset = (int)((win_y_high + win_y_low) / 2);
 
 		int pixel_thres = window_width * 0.2;
+
 		int ll = 0, lr = 0; int rl = 960, rr = 960;
 		int li = 0; // nonzero가 몇개인지 파악하기 위한 벡터에 사용될 인자
 		// window의 위치를 고려해서 벡터에 집어넣으면 불필요한 부분이 많아질 수 있다. 어차피 0의 개수를 구하기 위한 벡터이므로 0부터 window_width+1 개수만큼 생성
@@ -68,13 +69,6 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 			}
 		}
 
-		// window안에서 0이 아닌 픽셀의 개수를 구함
-		int lnonzero = countNonZero(lhigh_vector);
-		// 255인 픽셀의 개수가 threshold를 넘으면, 방금 구했던 255 픽셀 시작 지점과 끝 지점의 중앙 값을 다음 window의 중앙으로 잡는다.
-		if (lnonzero >= pixel_thres) {
-			left_start = (ll + lr) / 2;
-		}
-
 		int ri = 0;
 		vector<int> rhigh_vector(window_width + 1);
 		for (auto x = win_x_rightb_left; x < win_x_rightb_right; x++) {
@@ -89,7 +83,15 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 			}
 		}
 
+		// window안에서 0이 아닌 픽셀의 개수를 구함
+		int lnonzero = countNonZero(lhigh_vector);
 		int rnonzero = countNonZero(rhigh_vector);
+
+
+		// 255인 픽셀의 개수가 threshold를 넘으면, 방금 구했던 255 픽셀 시작 지점과 끝 지점의 중앙 값을 다음 window의 중앙으로 잡는다.
+		if (lnonzero >= pixel_thres) {
+			left_start = (ll + lr) / 2;
+		}
 		if (rnonzero >= pixel_thres) {
 			right_start = (rl + rr) / 2;
 		}
@@ -113,14 +115,15 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 
 
 		// draw window at v_thres
-		rectangle(roi, Rect(win_x_leftb_left, win_y_high, window_width, window_height), (255, 255, 255), 2);
-		rectangle(roi, Rect(win_x_rightb_left, win_y_high, window_width, window_height), (255, 255, 255), 2);
+		rectangle(roi, Rect(win_x_leftb_left, win_y_high, window_width, window_height), Scalar(0, 150, 0), 2);
+		rectangle(roi, Rect(win_x_rightb_left, win_y_high, window_width, window_height), Scalar(150, 0, 0), 2);
 
 
 
 		mpoints[window] = Point(lane_mid, (int)((win_y_high + win_y_low) / 2));
 		lpoints[window] = Point(left_start, (int)((win_y_high + win_y_low) / 2));
 		rpoints[window] = Point(right_start, (int)((win_y_high + win_y_low) / 2));
+
 	}
 
 	Vec4f left_line, right_line, mid_line;
@@ -139,18 +142,21 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 		mid_line[1] = -mid_line[1];
 	}
 
-	int lx0 = left_line[2], ly0 = left_line[3] + h / 2; // 선 위의 한 점
+	int lx0 = left_line[2], ly0 = left_line[3]; // 선 위의 한 점
 	int lx1 = lx0 + h * left_line[0], ly1 = ly0 + h * left_line[1]; // 단위 벡터 -> 그리고자 하는 길이를 빼주거나 더해줌
+	int lx2 = 2 * lx0 - lx1, ly2 = 2 * ly0 - ly1;
 
-	int rx0 = right_line[2], ry0 = right_line[3] + h / 2;
+	int rx0 = right_line[2], ry0 = right_line[3];
 	int rx1 = rx0 + h * right_line[0], ry1 = ry0 + h * right_line[1];
+	int rx2 = 2 * rx0 - rx1, ry2 = 2 * ry0 - ry1;
 
-	int mx0 = mid_line[2], my0 = mid_line[3] + h / 2;
+	int mx0 = mid_line[2], my0 = mid_line[3];
 	int mx1 = mx0 + h * mid_line[0], my1 = my0 + h * mid_line[1];
+	int mx2 = 2 * mx0 - mx1, my2 = 2 * my0 - my1;
 
-	line(roi, Point(lx0, ly0), Point(lx1, ly1), Scalar(0, 0, 255), 3);
-	line(roi, Point(rx0, ry0), Point(rx1, ry1), Scalar(0, 0, 255), 3);
-	line(roi, Point(mx0, my0), Point(mx1, my1), Scalar(0, 0, 255), 3);
+	line(roi, Point(lx1, ly1), Point(lx2, ly2), Scalar(0, 0, 255), 3);
+	line(roi, Point(rx1, ry1), Point(rx2, ry2), Scalar(0, 0, 255), 3);
+	line(roi, Point(mx1, my1), Point(mx2, my2), Scalar(0, 0, 255), 3);
 
 	return left_line, right_line, mid_line;
 }
