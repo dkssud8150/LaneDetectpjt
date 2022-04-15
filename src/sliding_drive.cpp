@@ -14,7 +14,7 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 
 	int margin = window_width / 2;
 
-	// ¾çÂÊÀÌ ÀÎ½ÄÀÌ µÇ¾ú´Ù¸é ÃÊ±âÈ­ÇÏ°í ´Ù½Ã ÀÔ·Â
+	// ì–‘ìª½ì´ ì¸ì‹ì´ ë˜ì—ˆë‹¤ë©´ ì´ˆê¸°í™”í•˜ê³  ë‹¤ì‹œ ì…ë ¥
 	vector<Point> mpoints(nwindows);
 
 	// init value setting
@@ -56,14 +56,14 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 		int pixel_thres = window_width * 0.2;
 
 		int ll = 0, lr = 0; int rl = 960, rr = 960;
-		int li = 0; // nonzero°¡ ¸î°³ÀÎÁö ÆÄ¾ÇÇÏ±â À§ÇÑ º¤ÅÍ¿¡ »ç¿ëµÉ ÀÎÀÚ
-		// windowÀÇ À§Ä¡¸¦ °í·ÁÇØ¼­ º¤ÅÍ¿¡ Áı¾î³ÖÀ¸¸é ºÒÇÊ¿äÇÑ ºÎºĞÀÌ ¸¹¾ÆÁú ¼ö ÀÖ´Ù. ¾îÂ÷ÇÇ 0ÀÇ °³¼ö¸¦ ±¸ÇÏ±â À§ÇÑ º¤ÅÍÀÌ¹Ç·Î 0ºÎÅÍ window_width+1 °³¼ö¸¸Å­ »ı¼º
-		vector<int> lhigh_vector(window_width + 1); // nonzero°¡ ¸î°³ ÀÎÁö ÆÄ¾ÇÇÒ ¶§ »ç¿ëÇÒ º¤ÅÍ
+		int li = 0; // nonzeroê°€ ëª‡ê°œì¸ì§€ íŒŒì•…í•˜ê¸° ìœ„í•œ ë²¡í„°ì— ì‚¬ìš©ë  ì¸ì
+		// windowì˜ ìœ„ì¹˜ë¥¼ ê³ ë ¤í•´ì„œ ë²¡í„°ì— ì§‘ì–´ë„£ìœ¼ë©´ ë¶ˆí•„ìš”í•œ ë¶€ë¶„ì´ ë§ì•„ì§ˆ ìˆ˜ ìˆë‹¤. ì–´ì°¨í”¼ 0ì˜ ê°œìˆ˜ë¥¼ êµ¬í•˜ê¸° ìœ„í•œ ë²¡í„°ì´ë¯€ë¡œ 0ë¶€í„° window_width+1 ê°œìˆ˜ë§Œí¼ ìƒì„±
+		vector<int> lhigh_vector(window_width + 1); // nonzeroê°€ ëª‡ê°œ ì¸ì§€ íŒŒì•…í•  ë•Œ ì‚¬ìš©í•  ë²¡í„°
 		for (auto x = win_x_leftb_left; x < win_x_leftb_right; x++) {
 			li++;
 			lhigh_vector[li] = v_thres.at<uchar>(offset, x);
 
-			// Â÷¼±ÀÇ Áß¾ÓÀ» °è»êÇÏ±â À§ÇØ 255 ½ÃÀÛÁ¡°ú 255 ³¡Á¡À» °è»ê
+			// ì°¨ì„ ì˜ ì¤‘ì•™ì„ ê³„ì‚°í•˜ê¸° ìœ„í•´ 255 ì‹œì‘ì ê³¼ 255 ëì ì„ ê³„ì‚°
 			if (v_thres.at<uchar>(offset, x) == 255 && ll == 0) {
 				ll = x;
 				lr = x;
@@ -87,12 +87,12 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 			}
 		}
 
-		// window¾È¿¡¼­ 0ÀÌ ¾Æ´Ñ ÇÈ¼¿ÀÇ °³¼ö¸¦ ±¸ÇÔ
+		// windowì•ˆì—ì„œ 0ì´ ì•„ë‹Œ í”½ì…€ì˜ ê°œìˆ˜ë¥¼ êµ¬í•¨
 		int lnonzero = countNonZero(lhigh_vector);
 		int rnonzero = countNonZero(rhigh_vector);
 
 
-		// 255ÀÎ ÇÈ¼¿ÀÇ °³¼ö°¡ threshold¸¦ ³ÑÀ¸¸é, ¹æ±İ ±¸Çß´ø 255 ÇÈ¼¿ ½ÃÀÛ ÁöÁ¡°ú ³¡ ÁöÁ¡ÀÇ Áß¾Ó °ªÀ» ´ÙÀ½ windowÀÇ Áß¾ÓÀ¸·Î Àâ´Â´Ù.
+		// 255ì¸ í”½ì…€ì˜ ê°œìˆ˜ê°€ thresholdë¥¼ ë„˜ìœ¼ë©´, ë°©ê¸ˆ êµ¬í–ˆë˜ 255 í”½ì…€ ì‹œì‘ ì§€ì ê³¼ ë ì§€ì ì˜ ì¤‘ì•™ ê°’ì„ ë‹¤ìŒ windowì˜ ì¤‘ì•™ìœ¼ë¡œ ì¡ëŠ”ë‹¤.
 		if (lnonzero >= pixel_thres) {
 			left_start = (ll + lr) / 2;
 		}
@@ -100,13 +100,13 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 			right_start = (rl + rr) / 2;
 		}
 
-		// Â÷¼± Áß¾Ó°ú Å½ÁöÇÑ Â÷¼±°úÀÇ °Å¸® ÃøÁ¤
+		// ì°¨ì„  ì¤‘ì•™ê³¼ íƒì§€í•œ ì°¨ì„ ê³¼ì˜ ê±°ë¦¬ ì¸¡ì •
 		int lane_mid = (right_start + left_start) / 2;
 		int left_diff = lane_mid - left_start;
 		int right_diff = -(lane_mid - right_start);
 
 #if 1
-		// ÇÑÂÊ Â÷¼±ÀÇ nonzero°¡ ÀÓ°è°ªÀ» ³ÑÁö ¸øÇÒ °æ¿ì Áß°£À» ±âÁ¡À¸·Î ¹İ´ëÆí Â÷¼± À§Ä¡¸¦ ±âÁØÀ¸·Î ´ëÄª
+		// í•œìª½ ì°¨ì„ ì˜ nonzeroê°€ ì„ê³„ê°’ì„ ë„˜ì§€ ëª»í•  ê²½ìš° ì¤‘ê°„ì„ ê¸°ì ìœ¼ë¡œ ë°˜ëŒ€í¸ ì°¨ì„  ìœ„ì¹˜ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ëŒ€ì¹­
 		if (lnonzero < pixel_thres && rnonzero > pixel_thres) {
 			left_start = lane_mid - right_diff;
 			lane_mid = right_start - right_diff;
@@ -116,7 +116,7 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 			lane_mid = left_start + left_diff;
 		}
 #else
-		// Áö³­ ÇÁ·¹ÀÓ¿¡¼­ÀÇ ÇÈ¼¿°ªÀ» ±â¾ïÇÏ°í nonzero°¡ ÀÓ°è°ªÀ» ³ÑÁö ¸øÇÒ °æ¿ì Áö³­ ÇÁ·¹ÀÓÀÇ ÇØ´ç À©µµ¿ì ¹øÈ£ÀÇ °ªÀ» ºÒ·¯¿È
+		// ì§€ë‚œ í”„ë ˆì„ì—ì„œì˜ í”½ì…€ê°’ì„ ê¸°ì–µí•˜ê³  nonzeroê°€ ì„ê³„ê°’ì„ ë„˜ì§€ ëª»í•  ê²½ìš° ì§€ë‚œ í”„ë ˆì„ì˜ í•´ë‹¹ ìœˆë„ìš° ë²ˆí˜¸ì˜ ê°’ì„ ë¶ˆëŸ¬ì˜´
 		if (lnonzero < pixel_thres && rnonzero > pixel_thres) {
 			left_start = lpoints[window].x;
 			lane_mid = right_start - right_diff;
@@ -141,11 +141,11 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 	}
 
 	Vec4f left_line, right_line, mid_line;
-	fitLine(lpoints, left_line, DIST_L2, 0, 0.01, 0.01); // Ãâ·ÂÀÇ 0,1 ¹øÂ° ÀÎÀÚ´Â ´ÜÀ§º¤ÅÍ, 3,4¹øÂ° ÀÎÀÚ´Â ¼± À§ÀÇ ÇÑ Á¡
+	fitLine(lpoints, left_line, DIST_L2, 0, 0.01, 0.01); // ì¶œë ¥ì˜ 0,1 ë²ˆì§¸ ì¸ìëŠ” ë‹¨ìœ„ë²¡í„°, 3,4ë²ˆì§¸ ì¸ìëŠ” ì„  ìœ„ì˜ í•œ ì 
 	fitLine(rpoints, right_line, DIST_L2, 0, 0.01, 0.01);
 	fitLine(mpoints, mid_line, DIST_L2, 0, 0.01, 0.01);
 
-	// ¹æÇâÀÌ Ç×»ó ¾Æ·¡¸¦ ÇâÇÏµµ·Ï ¸¸µé±â À§ÇØ ´ÜÀ§ º¤ÅÍÀÇ ¹æÇâÀ» ¹Ù²ãÁØ´Ù.
+	// ë°©í–¥ì´ í•­ìƒ ì•„ë˜ë¥¼ í–¥í•˜ë„ë¡ ë§Œë“¤ê¸° ìœ„í•´ ë‹¨ìœ„ ë²¡í„°ì˜ ë°©í–¥ì„ ë°”ê¿”ì¤€ë‹¤.
 	if (left_line[1] > 0) {
 		left_line[1] = -left_line[1];
 	}
@@ -156,8 +156,8 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 		mid_line[1] = -mid_line[1];
 	}
 
-	int lx0 = left_line[2], ly0 = left_line[3]; // ¼± À§ÀÇ ÇÑ Á¡
-	int lx1 = lx0 + h * left_line[0], ly1 = ly0 + h * left_line[1]; // ´ÜÀ§ º¤ÅÍ -> ±×¸®°íÀÚ ÇÏ´Â ±æÀÌ¸¦ »©ÁÖ°Å³ª ´õÇØÁÜ
+	int lx0 = left_line[2], ly0 = left_line[3]; // ì„  ìœ„ì˜ í•œ ì 
+	int lx1 = lx0 + h * left_line[0], ly1 = ly0 + h * left_line[1]; // ë‹¨ìœ„ ë²¡í„° -> ê·¸ë¦¬ê³ ì í•˜ëŠ” ê¸¸ì´ë¥¼ ë¹¼ì£¼ê±°ë‚˜ ë”í•´ì¤Œ
 	int lx2 = 2 * lx0 - lx1, ly2 = 2 * ly0 - ly1;
 
 	int rx0 = right_line[2], ry0 = right_line[3];
@@ -197,7 +197,7 @@ int main()
 {
 	VideoCapture cap("../data/subProject.avi");
 
-	//csv ÆÄÀÏ »ı¼º
+	//csv íŒŒì¼ ìƒì„±
 	ofstream CSVFILE("lane_pos.csv");
 	CSVFILE << "index" << "," << "frame" << "," << "lpos" << "," << "rpos" << endl;
 	int index = 0;
@@ -218,7 +218,7 @@ int main()
 	vector<Point2f> src_pts(4);
 	vector<Point2f> dst_pts(4);
 
-	// ÆÄ¶õ»ö ¼± ¾ø´Â roi
+	// íŒŒë€ìƒ‰ ì„  ì—†ëŠ” roi
 	src_pts[0] = Point2f(0, 395); src_pts[1] = Point2f(198, 280); src_pts[2] = Point2f(403, 280); src_pts[3] = Point2f(580, 395);
 	dst_pts[0] = Point2f(0, h - 1); dst_pts[1] = Point2f(0, 0); dst_pts[2] = Point2f(w - 1, 0); dst_pts[3] = Point2f(w - 1, h - 1);
 
@@ -270,7 +270,7 @@ int main()
 
 		imshow("v_thres", v_thres);
 
-		// Ã¹À§Ä¡ ÁöÁ¤
+		// ì²«ìœ„ì¹˜ ì§€ì •
 		int cnt = 0;
 		int left_l_init = 0, left_r_init = 0;
 		int right_l_init = 960, right_r_init = 960;
@@ -301,8 +301,6 @@ int main()
 
 
 		left_line, right_line = n_window_sliding(left_start, right_start, roi, v_thres, w, h, lpoints, rpoints);
-
-		draw_line(frame, roi, left_line, right_line, per_mat_tosrc);
 
 		imshow("src", frame);
 		imshow("roi", roi);
