@@ -4,38 +4,16 @@
 using namespace std;
 using namespace cv;
 
-Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, int w, int h, vector<Vec4i>& prev_lwindow, vector<Vec4i>& prev_rwindow, Vec4f left_line, Vec4f right_line) {
+Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, int w, int h, vector<Point>& lpoints, vector<Point>& rpoints) {
 	// define constant for sliding window
 	int nwindows = 12;
 	int window_height = (int)(h / nwindows);
 	int window_width = (int)(w / nwindows * 1.5);
 
 	int margin = window_width / 2;
-	
-	// 좌우 둘 다 인식이 되지 않을 경우 지난 화면의 윈도우를 사용
-	if (left_start == 0 && right_start == 960) {
-		for (auto i = 0; i <= prev_lwindow.size(); i++) {
-			int win_y_high = prev_lwindow[i][0];
-			int win_x_leftb_right = prev_lwindow[i][1];
-			int win_y_low = prev_lwindow[i][2];
-			int win_x_leftb_left = prev_lwindow[i][3];
-
-			int win_x_rightb_right = prev_rwindow[i][1];
-			int win_x_rightb_left = prev_rwindow[i][3];
-
-			rectangle(roi, Rect(win_x_leftb_left, win_y_high, window_width, window_height), Scalar(0, 150, 0), 2);
-			rectangle(roi, Rect(win_x_rightb_left, win_y_high, window_width, window_height), Scalar(150, 0, 0), 2);
-		}
-
-
-
-		return left_line, right_line;
-	}
 
 	// 양쪽이 인식이 되었다면 초기화하고 다시 입력
-	left_line = Vec4f(0.0, 0.0, 0.0, 0.0);
-	right_line = Vec4f(0.0, 0.0, 0.0, 0.0);
-	vector<Point> lpoints(nwindows), rpoints(nwindows), mpoints(nwindows);
+	vector<Point> mpoints(nwindows);
 
 	// init value setting
 	int lane_mid = w / 2;
@@ -52,9 +30,6 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 	lpoints[0] = Point(left_start, (int)((win_y_high + win_y_low) / 2));
 	rpoints[0] = Point(right_start, (int)((win_y_high + win_y_low) / 2));
 	mpoints[0] = Point((int)((left_start + right_start) / 2), (int)((win_y_high + win_y_low) / 2));
-
-	prev_lwindow[0] = (Vec4i(win_y_high, win_x_leftb_right, win_y_low, win_x_leftb_left));
-	prev_rwindow[0] = (Vec4i(win_y_high, win_x_rightb_right, win_y_low, win_x_rightb_left));
 
 	// init box draw
 	rectangle(roi, Rect(win_x_leftb_left, win_y_high, window_width, window_height), Scalar(0, 150, 0), 2);
@@ -134,7 +109,7 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 		int left_diff = lane_mid - left_start;
 		int right_diff = -(lane_mid - right_start);
 
-
+#if 1
 		// 한쪽 차선의 nonzero가 임계값을 넘지 못할 경우 중간을 기점으로 반대편 차선 위치를 기준으로 대칭
 		if (lnonzero < pixel_thres && rnonzero > pixel_thres) {
 			left_start = lane_mid - right_diff;
@@ -144,7 +119,18 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 			right_start = lane_mid + left_diff;
 			lane_mid = left_start + left_diff;
 		}
+#else
+		// 지난 프레임에서의 픽셀값을 기억하고 nonzero가 임계값을 넘지 못할 경우 지난 프레임의 해당 윈도우 번호의 값을 불러옴
+		if (lnonzero < pixel_thres && rnonzero > pixel_thres) {
+			left_start = lpoints[window].x;
+			lane_mid = right_start - right_diff;
+		}
+		else if (lnonzero > pixel_thres && rnonzero < pixel_thres && rpoints[window].x != 0) {
+			right_start = rpoints[window].x;
+			lane_mid = left_start + left_diff;
+		}
 
+#endif
 
 
 		// draw window at v_thres
@@ -156,13 +142,9 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 		mpoints[window] = Point(lane_mid, (int)((win_y_high + win_y_low) / 2));
 		lpoints[window] = Point(left_start, (int)((win_y_high + win_y_low) / 2));
 		rpoints[window] = Point(right_start, (int)((win_y_high + win_y_low) / 2));
-
-		// 윈도우를 prev_window에 저장하여 다음 프레임에서 맨 아래 부분이 인식이 안되면 지난 거를 사용한다.
-		prev_lwindow.push_back(Vec4i(win_y_high, win_x_leftb_right, win_y_low, win_x_leftb_left));
-		prev_rwindow.push_back(Vec4i(win_y_high, win_x_rightb_right, win_y_low, win_x_rightb_left));
 	}
 
-	Vec4f mid_line;
+	Vec4f left_line, right_line, mid_line;
 	fitLine(lpoints, left_line, DIST_L2, 0, 0.01, 0.01); // 출력의 0,1 번째 인자는 단위벡터, 3,4번째 인자는 선 위의 한 점
 	fitLine(rpoints, right_line, DIST_L2, 0, 0.01, 0.01);
 	fitLine(mpoints, mid_line, DIST_L2, 0, 0.01, 0.01);
@@ -243,6 +225,8 @@ int main()
 
 	Mat frame, roi;
 	Vec4f left_line, right_line;
+	vector<Point> lpoints(12), rpoints(12);
+
 	while (true) {
 		cap >> frame;
 
@@ -356,9 +340,9 @@ int main()
 		int left_start = (left_l_init + left_r_init) / 2;
 		int right_start = (right_l_init + right_r_init) / 2;
 
-		vector<Vec4i> prev_lwindow(1), prev_rwindow(1);
 
-		left_line, right_line = n_window_sliding(left_start, right_start, roi, v_thres, w, h, prev_lwindow, prev_rwindow, left_line, right_line);
+
+		left_line, right_line = n_window_sliding(left_start, right_start, roi, v_thres, w, h, lpoints, rpoints);
 
 		draw_line(frame, roi, left_line, right_line, per_mat_tosrc);
 
