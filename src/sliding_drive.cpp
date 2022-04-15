@@ -1,5 +1,7 @@
 #include <iostream>
 #include "opencv2/opencv.hpp"
+#include <fstream>
+#include <algorithm >
 
 using namespace std;
 using namespace cv;
@@ -49,12 +51,6 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 		win_x_rightb_right = right_start + margin;
 		win_x_rightb_left = right_start - margin;
 
-
-		// i will detect the lane at top of box
-//		int offset = win_y_high + 4;
-		// i will detect the lane at bottom of box
-//		int offset = win_y_low - 4;
-		// i will detect the lane at the mid of box 
 		int offset = (int)((win_y_high + win_y_low) / 2);
 
 		int pixel_thres = window_width * 0.2;
@@ -179,16 +175,32 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 	return left_line, right_line, mid_line;
 }
 
-void draw_line(Mat frame, Mat roi, Vec4f left_line, Vec4f right_line, Mat per_mat_tosrc, int width = 960, int height = 480) {
-	Mat newframe;
-	warpPerspective(roi, newframe, per_mat_tosrc, Size(width, height), INTER_LINEAR);
-
-	//	imshow("newframe", newframe);
+void find_xPoint(Mat img, Mat per_mat_tosrc, int& lpos, int& rpos, int ans_offset = 385, int width = 640, int height = 480) {
+	Mat inverse;
+	warpPerspective(img, inverse, per_mat_tosrc, Size(width, height), INTER_LINEAR);
+	vector<int> pos{};
+	for (int x = 0; x < width; x++) {
+		if (inverse.at<uchar>(ans_offset, x) == (50, 100, 255))
+		{
+			pos.push_back(x);
+		}
+	}
+	if (pos.size() > 0) {
+		rpos = *max_element(pos.begin(), pos.end());
+		lpos = *min_element(pos.begin(), pos.end());
+	}
+	line(inverse, Point(0, ans_offset), Point(640, ans_offset), Scalar(0, 0, 200), 1);
+	imshow("inverse", inverse);
 }
 
 int main()
 {
 	VideoCapture cap("../data/subProject.avi");
+
+	//csv 파일 생성
+	ofstream CSVFILE("lane_pos.csv");
+	CSVFILE << "index" << "," << "frame" << "," << "lpos" << "," << "rpos" << endl;
+	int index = 0;
 
 	if (!cap.isOpened()) {
 		cerr << "Camera open failed" << endl;
@@ -206,9 +218,6 @@ int main()
 	vector<Point2f> src_pts(4);
 	vector<Point2f> dst_pts(4);
 
-	// 파란색 선 보이게 하는 roi
-//	src_pts[0] = Point2f(0, 420); src_pts[1] = Point2f(213, 280); src_pts[2] = Point2f(395, 280); src_pts[3] = Point2f(595, 420);
-
 	// 파란색 선 없는 roi
 	src_pts[0] = Point2f(0, 395); src_pts[1] = Point2f(198, 280); src_pts[2] = Point2f(403, 280); src_pts[3] = Point2f(580, 395);
 	dst_pts[0] = Point2f(0, h - 1); dst_pts[1] = Point2f(0, 0); dst_pts[2] = Point2f(w - 1, 0); dst_pts[3] = Point2f(w - 1, h - 1);
@@ -216,8 +225,6 @@ int main()
 	// point about polylines
 	vector<Point> pts(4);
 	pts[0] = Point(src_pts[0]); pts[1] = Point(src_pts[1]); pts[2] = Point(src_pts[2]); pts[3] = Point(src_pts[3]);
-
-	//	pts[0] = Point(0, 420); pts[1] = Point(213, 280); pts[2] = Point(395, 280); pts[3] = Point(595, 420);
 
 
 	Mat per_mat_todst = getPerspectiveTransform(src_pts, dst_pts);
@@ -239,35 +246,7 @@ int main()
 		// roi box indicate
 		polylines(frame, pts, true, Scalar(255, 255, 0), 2);
 
-
-		// binary processing
-#if 0	// full shot binary
-		Mat hsv, v_thres;
-		int lane_binary_thres = 140;
-		cvtColor(frame, hsv, COLOR_BGR2HSV);
-		vector<Mat> hsv_planes;
-		split(frame, hsv_planes);
-		Mat v_plane = hsv_planes[2];
-		v_plane = 255 - v_plane;
-		int means = mean(v_plane)[0];
-		v_plane = v_plane + (128 - means);
-		GaussianBlur(v_plane, v_plane, Size(), 1.0);
-		threshold(v_plane, v_thres, lane_binary_thres, 255, THRESH_OTSU);
-		imshow("v_thres", v_thres);
-
-#elif 0	// 1-1 grayscale -> gaissian -> canny
-		Mat roi_gray, roi_edge;
-		cvtColor(roi, roi_gray, COLOR_BGR2GRAY);
-		GaussianBlur(roi_gray, roi_gray, Size(), 1.0);
-
-		threshold(roi_gray, roi_gray, 30, 75, THRESH_BINARY);
-
-		Canny(roi_gray, roi_edge, 50, 150);
-		imshow("roi", roi_gray);
-		imshow("roi", roi_edge);
-
-
-#elif 1	// 2-1 hsv -> gaussian -> inRange -> canny
+		// 2-1 hsv -> gaussian -> inRange -> canny
 		Mat hsv;
 		Mat v_thres = Mat::zeros(w, h, CV_8UC1);
 		int lane_binary_thres = 125; // contrast : 155
@@ -283,35 +262,14 @@ int main()
 
 		// brightness control
 		int means = mean(v_plane)[0];
-		// v_plane.convertTo(v_plane, -1, 1.5, 128 - means); // roi = roi + (128 - m);
 		v_plane = v_plane + (100 - means);
 
 		GaussianBlur(v_plane, v_plane, Size(), 1.0);
 
 		inRange(v_plane, lane_binary_thres, 255, v_thres);
-		// OTSU 알고리즘
-//		threshold(v_plane, v_thres, lane_binary_thres, 255, THRESH_OTSU);
 
-//		imshow("hsv", hsv);
-//		imshow("v_plane", v_plane);
 		imshow("v_thres", v_thres);
 
-
-#else 0	// 3-1 lab -> gaussian -> inrange -> canny
-		Mat lab, lab_thres, roi_edge;
-		int lane_binary_thres = 130;
-		cvtColor(roi, lab, COLOR_BGR2Lab);
-
-		GaussianBlur(roi, roi, Size(), 1.0);
-
-		inRange(lab, Scalar(0, 0, lane_binary_thres), Scalar(255, 255, 255), lab_thres); //00130
-		Canny(lab_thres, lab_edge, 50, 150);
-
-		imshow("lab", lab);
-		imshow("lab_thres", lab_thres);
-		imshow("lab_edge", roi_edge);
-
-#endif	
 		// 첫위치 지정
 		int cnt = 0;
 		int left_l_init = 0, left_r_init = 0;
@@ -350,6 +308,16 @@ int main()
 		imshow("roi", roi);
 
 		if (waitKey(10) == 27) break;
+
+		int frame_number = cap.get(CAP_PROP_POS_FRAMES) - 1;
+		if (frame_number % 30 == 0)
+		{
+			int lpos = 0;
+			int rpos = 640;
+			find_xPoint(roi, per_mat_tosrc, lpos, rpos);
+			CSVFILE << index << "," << frame_number << "," << lpos << "," << rpos << endl;
+			index++;
+		}
 
 	}
 	cap.release();
