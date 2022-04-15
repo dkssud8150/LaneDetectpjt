@@ -157,22 +157,23 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 	}
 
 	int lx0 = left_line[2], ly0 = left_line[3]; // 선 위의 한 점
-	int lx1 = lx0 + h * left_line[0], ly1 = ly0 + h * left_line[1]; // 단위 벡터 -> 그리고자 하는 길이를 빼주거나 더해줌
+	int lx1 = lx0 + h / 2 * left_line[0], ly1 = ly0 + h / 2 * left_line[1]; // 단위 벡터 -> 그리고자 하는 길이를 빼주거나 더해줌
 	int lx2 = 2 * lx0 - lx1, ly2 = 2 * ly0 - ly1;
 
 	int rx0 = right_line[2], ry0 = right_line[3];
-	int rx1 = rx0 + h * right_line[0], ry1 = ry0 + h * right_line[1];
+	int rx1 = rx0 + h / 2 * right_line[0], ry1 = ry0 + h / 2 * right_line[1];
 	int rx2 = 2 * rx0 - rx1, ry2 = 2 * ry0 - ry1;
 
 	int mx0 = mid_line[2], my0 = mid_line[3];
-	int mx1 = mx0 + h * mid_line[0], my1 = my0 + h * mid_line[1];
+	int mx1 = mx0 + h / 2 * mid_line[0], my1 = my0 + h / 2 * mid_line[1];
 	int mx2 = 2 * mx0 - mx1, my2 = 2 * my0 - my1;
 
 	line(roi, Point(lx1, ly1), Point(lx2, ly2), Scalar(0, 100, 200), 3);
 	line(roi, Point(rx1, ry1), Point(rx2, ry2), Scalar(0, 100, 200), 3);
 	line(roi, Point(mx1, my1), Point(mx2, my2), Scalar(0, 0, 255), 3);
 
-	return left_line, right_line, mid_line;
+
+	return left_line, right_line;
 }
 
 void find_xPoint(Mat img, Mat per_mat_tosrc, int& lpos, int& rpos, int ans_offset = 395, int width = 640, int height = 480) {
@@ -194,15 +195,15 @@ int main()
 {
 	VideoCapture cap("../data/subProject.avi");
 
-	//csv 파일 생성
-	ofstream CSVFILE("lane_pos.csv");
-	CSVFILE << "index" << "," << "frame" << "," << "lpos" << "," << "rpos" << endl;
-	int index = 0;
-
 	if (!cap.isOpened()) {
 		cerr << "Camera open failed" << endl;
 		return -1;
 	}
+
+	//csv 파일 생성
+	ofstream CSVFILE("lane_pos.csv");
+	CSVFILE << "index" << "," << "frame" << "," << "lpos" << "," << "rpos" << endl;
+	int index = 0;
 
 	// src image size
 	int width = cvRound(cap.get(CAP_PROP_FRAME_WIDTH));
@@ -302,7 +303,7 @@ int main()
 		imshow("src", frame);
 		imshow("roi", roi);
 
-		
+
 
 		//csv 파일 생성
 		int frame_number = cap.get(CAP_PROP_POS_FRAMES) - 1;
