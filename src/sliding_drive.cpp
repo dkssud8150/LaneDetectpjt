@@ -7,9 +7,9 @@ using namespace std;
 using namespace cv;
 
 vector<Point> matrix_oper(Mat frame, Mat per_mat_tosrc, int lx1, int ly1, int lx2, int ly2, int rx1, int ry1, int rx2, int ry2) {
-	vector<Point> lnew_line, rnew_line;
-	int new_lx1, new_ly1, new_lx2, new_ly2;
+	vector<Point> warp_left_line, warp_right_line;
 
+	int new_lx1, new_ly1, new_lx2, new_ly2;
 	new_lx1 = (per_mat_tosrc.at<double>(0, 0) * lx1 + per_mat_tosrc.at<double>(0, 1) * ly1 + per_mat_tosrc.at<double>(0, 2)) /
 		(per_mat_tosrc.at<double>(2, 0) * lx1 + per_mat_tosrc.at<double>(2, 1) * ly1 + per_mat_tosrc.at<double>(2, 2));
 
@@ -35,16 +35,20 @@ vector<Point> matrix_oper(Mat frame, Mat per_mat_tosrc, int lx1, int ly1, int lx
 	new_ry2 = (per_mat_tosrc.at<double>(1, 0) * rx2 + per_mat_tosrc.at<double>(1, 1) * ry2 + per_mat_tosrc.at<double>(1, 2)) /
 		(per_mat_tosrc.at<double>(2, 0) * rx2 + per_mat_tosrc.at<double>(2, 1) * ry2 + per_mat_tosrc.at<double>(2, 2));
 
-
-	lnew_line.push_back(Point(new_lx1, new_ly1)); lnew_line.push_back(Point(new_lx2, new_ly2));
-	rnew_line.push_back(Point(new_rx1, new_ry1)); rnew_line.push_back(Point(new_rx2, new_ry2));
+	warp_left_line.push_back(Point(new_lx1, new_ly1)); warp_left_line.push_back(Point(new_lx2, new_ly2));
+	warp_right_line.push_back(Point(new_rx1, new_ry1)); warp_right_line.push_back(Point(new_rx2, new_ry2));
 
 
 	line(frame, Point(new_lx1, new_ly1), Point(new_lx2, new_ly2), Scalar(0, 255, 255), 2);
 	line(frame, Point(new_rx1, new_ry1), Point(new_rx2, new_ry2), Scalar(0, 255, 255), 2);
 
+	int offset = 400;
+	int lpos = int((offset - warp_left_line[0].y) * ((warp_left_line[1].x - warp_left_line[0].x) / (warp_left_line[1].y - warp_left_line[0].y)) + warp_left_line[0].x);
+	int rpos = int((offset - warp_right_line[0].y) * ((warp_right_line[1].x - warp_right_line[0].x) / (warp_right_line[1].y - warp_right_line[0].y)) + warp_right_line[0].x);
+	vector<Point> pos;
+	pos.push_back(Point(lpos, rpos));
 
-	return lnew_line, rnew_line;
+	return warp_left_line, warp_right_line, pos;
 }
 
 vector<Point> n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, int w, int h,
@@ -212,26 +216,11 @@ vector<Point> n_window_sliding(int left_start, int right_start, Mat roi, Mat v_t
 	line(roi, Point(rx1, ry1), Point(rx2, ry2), Scalar(0, 100, 200), 3);
 	line(roi, Point(mx1, my1), Point(mx2, my2), Scalar(0, 0, 255), 3);
 
-	vector<Point> warp_left_line, warp_right_line = matrix_oper(frame, per_mat_tosrc, lx1, ly1, lx2, ly2, rx1, ry1, rx2, ry2);
+	vector<Point> warp_left_line(2), warp_right_line(2), pos;
+	warp_left_line, warp_right_line, pos = matrix_oper(frame, per_mat_tosrc, lx1, ly1, lx2, ly2, rx1, ry1, rx2, ry2);
 
-	return warp_left_line, warp_right_line;
+	return warp_left_line, warp_right_line, pos;
 }
-
-void find_xPoint(Mat img, Mat per_mat_tosrc, int& lpos, int& rpos, int ans_offset = 395, int width = 640, int height = 480) {
-	Mat inverse;
-	warpPerspective(img, inverse, per_mat_tosrc, Size(width, height), INTER_LINEAR);
-	//imshow("inverse", inverse);
-	vector<int> pos;
-	for (int x = 0; x < width; x++) {
-		if (inverse.at<Vec3b>(ans_offset, x) == Vec3b(0, 100, 200))
-			pos.push_back(x);
-	}
-	if (pos.size()) {
-		rpos = *max_element(pos.begin(), pos.end());
-		lpos = *min_element(pos.begin(), pos.end());
-	}
-}
-
 
 
 int main()
@@ -273,7 +262,7 @@ int main()
 	Mat per_mat_tosrc = getPerspectiveTransform(dst_pts, src_pts);
 
 	Mat frame, roi;
-	vector<Point> left_line, right_line;
+	vector<Point> warp_left_line(2), warp_right_line(2);
 	vector<Point> lpoints(12), rpoints(12);
 
 	while (true) {
@@ -340,8 +329,8 @@ int main()
 		int right_start = (right_l_init + right_r_init) / 2;
 
 
-
-		left_line, right_line = n_window_sliding(left_start, right_start, roi, v_thres,
+		vector<Point> pos;
+		warp_left_line, warp_right_line, pos = n_window_sliding(left_start, right_start, roi, v_thres,
 			w, h, lpoints, rpoints, per_mat_tosrc, frame);
 
 
@@ -354,10 +343,9 @@ int main()
 		int frame_number = cap.get(CAP_PROP_POS_FRAMES) - 1;
 		if (frame_number % 30 == 0)
 		{
-			int lpos = 0;
-			int rpos = 640;
+			int lpos = pos[0].x;
+			int rpos = pos[1].x;
 
-			find_xPoint(roi, per_mat_tosrc, lpos, rpos);
 			CSVFILE << index << "," << frame_number << "," << lpos << "," << rpos << endl;
 			index++;
 		}
