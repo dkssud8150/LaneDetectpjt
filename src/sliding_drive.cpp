@@ -6,7 +6,21 @@
 using namespace std;
 using namespace cv;
 
-Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, int w, int h, vector<Point>& lpoints, vector<Point>& rpoints) {
+int matrix_oper(Mat frame, Mat per_mat_tosrc, int x, int y) {
+	int new_x, new_y;
+	new_x = (per_mat_tosrc.at<double>(0, 0) * x + per_mat_tosrc.at<double>(0, 1) * y + per_mat_tosrc.at<double>(0, 2)) /
+		(per_mat_tosrc.at<double>(2, 0) * x + per_mat_tosrc.at<double>(2, 1) * y + per_mat_tosrc.at<double>(2, 2));
+
+	new_y = (per_mat_tosrc.at<double>(1, 0) * x + per_mat_tosrc.at<double>(1, 1) * y + per_mat_tosrc.at<double>(1, 2)) /
+		(per_mat_tosrc.at<double>(2, 0) * x + per_mat_tosrc.at<double>(2, 1) * y + per_mat_tosrc.at<double>(2, 2));
+
+	circle(frame, Point(new_x, new_y), 5, Scalar(100, 100, 0));
+
+	return new_x, new_y;
+}
+
+Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, int w, int h,
+	vector<Point>& lpoints, vector<Point>& rpoints, Mat per_mat_tosrc, Mat frame) {
 	// define constant for sliding window
 	int nwindows = 12;
 	int window_height = (int)(h / nwindows);
@@ -108,31 +122,28 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 #if 1
 		// 한쪽 차선의 nonzero가 임계값을 넘지 못할 경우 중간을 기점으로 반대편 차선 위치를 기준으로 대칭
 		if (lnonzero < pixel_thres && rnonzero > pixel_thres) {
-			left_start = lane_mid - right_diff;
 			lane_mid = right_start - right_diff;
+			left_start = lane_mid - right_diff;
 		}
 		else if (lnonzero > pixel_thres && rnonzero < pixel_thres) {
-			right_start = lane_mid + left_diff;
 			lane_mid = left_start + left_diff;
+			right_start = lane_mid + left_diff;
 		}
 #else
 		// 지난 프레임에서의 픽셀값을 기억하고 nonzero가 임계값을 넘지 못할 경우 지난 프레임의 해당 윈도우 번호의 값을 불러옴
 		if (lnonzero < pixel_thres && rnonzero > pixel_thres) {
 			left_start = lpoints[window].x;
-			lane_mid = right_start - right_diff;
+			lane_mid = (right_start + left_start) / 2;
 		}
 		else if (lnonzero > pixel_thres && rnonzero < pixel_thres && rpoints[window].x != 0) {
 			right_start = rpoints[window].x;
-			lane_mid = left_start + left_diff;
+			lane_mid = (right_start + left_start) / 2;
 		}
 
 #endif
-
-
 		// draw window at v_thres
 		rectangle(roi, Rect(win_x_leftb_left, win_y_high, window_width, window_height), Scalar(0, 150, 0), 2);
 		rectangle(roi, Rect(win_x_rightb_left, win_y_high, window_width, window_height), Scalar(150, 0, 0), 2);
-
 
 
 		mpoints[window] = Point(lane_mid, (int)((win_y_high + win_y_low) / 2));
@@ -172,6 +183,10 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 	line(roi, Point(rx1, ry1), Point(rx2, ry2), Scalar(0, 100, 200), 3);
 	line(roi, Point(mx1, my1), Point(mx2, my2), Scalar(0, 0, 255), 3);
 
+	int warp_lx1, warp_ly1 = matrix_oper(frame, per_mat_tosrc, lx1, ly1);
+	int warp_lx2, warp_ly2 = matrix_oper(frame, per_mat_tosrc, lx2, ly2);
+	int warp_rx1, warp_ry1 = matrix_oper(frame, per_mat_tosrc, rx1, ry1);
+	int warp_rx2, warp_ry2 = matrix_oper(frame, per_mat_tosrc, rx2, ry2);
 
 	return left_line, right_line;
 }
@@ -179,7 +194,7 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 void find_xPoint(Mat img, Mat per_mat_tosrc, int& lpos, int& rpos, int ans_offset = 395, int width = 640, int height = 480) {
 	Mat inverse;
 	warpPerspective(img, inverse, per_mat_tosrc, Size(width, height), INTER_LINEAR);
-	imshow("inverse", inverse);
+	//imshow("inverse", inverse);
 	vector<int> pos;
 	for (int x = 0; x < width; x++) {
 		if (inverse.at<Vec3b>(ans_offset, x) == Vec3b(0, 100, 200))
@@ -191,6 +206,8 @@ void find_xPoint(Mat img, Mat per_mat_tosrc, int& lpos, int& rpos, int ans_offse
 	}
 }
 
+
+
 int main()
 {
 	VideoCapture cap("../data/subProject.avi");
@@ -199,6 +216,7 @@ int main()
 		cerr << "Camera open failed" << endl;
 		return -1;
 	}
+
 
 	//csv 파일 생성
 	ofstream CSVFILE("lane_pos.csv");
@@ -269,7 +287,6 @@ int main()
 		imshow("v_thres", v_thres);
 
 		// 첫위치 지정
-		int cnt = 0;
 		int left_l_init = 0, left_r_init = 0;
 		int right_l_init = 960, right_r_init = 960;
 		for (auto x = 0; x < w; x++) {
@@ -298,7 +315,9 @@ int main()
 
 
 
-		left_line, right_line = n_window_sliding(left_start, right_start, roi, v_thres, w, h, lpoints, rpoints);
+		left_line, right_line = n_window_sliding(left_start, right_start, roi, v_thres,
+			w, h, lpoints, rpoints, per_mat_tosrc, frame);
+
 
 		imshow("src", frame);
 		imshow("roi", roi);
