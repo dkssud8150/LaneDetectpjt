@@ -6,20 +6,48 @@
 using namespace std;
 using namespace cv;
 
-int matrix_oper(Mat frame, Mat per_mat_tosrc, int x, int y) {
-	int new_x, new_y;
-	new_x = (per_mat_tosrc.at<double>(0, 0) * x + per_mat_tosrc.at<double>(0, 1) * y + per_mat_tosrc.at<double>(0, 2)) /
-		(per_mat_tosrc.at<double>(2, 0) * x + per_mat_tosrc.at<double>(2, 1) * y + per_mat_tosrc.at<double>(2, 2));
+vector<Point> matrix_oper(Mat frame, Mat per_mat_tosrc, int lx1, int ly1, int lx2, int ly2, int rx1, int ry1, int rx2, int ry2) {
+	vector<Point> lnew_line, rnew_line;
+	int new_lx1, new_ly1, new_lx2, new_ly2;
 
-	new_y = (per_mat_tosrc.at<double>(1, 0) * x + per_mat_tosrc.at<double>(1, 1) * y + per_mat_tosrc.at<double>(1, 2)) /
-		(per_mat_tosrc.at<double>(2, 0) * x + per_mat_tosrc.at<double>(2, 1) * y + per_mat_tosrc.at<double>(2, 2));
+	new_lx1 = (per_mat_tosrc.at<double>(0, 0) * lx1 + per_mat_tosrc.at<double>(0, 1) * ly1 + per_mat_tosrc.at<double>(0, 2)) /
+		(per_mat_tosrc.at<double>(2, 0) * lx1 + per_mat_tosrc.at<double>(2, 1) * ly1 + per_mat_tosrc.at<double>(2, 2));
 
-	circle(frame, Point(new_x, new_y), 5, Scalar(100, 100, 0));
+	new_ly1 = (per_mat_tosrc.at<double>(1, 0) * lx1 + per_mat_tosrc.at<double>(1, 1) * ly1 + per_mat_tosrc.at<double>(1, 2)) /
+		(per_mat_tosrc.at<double>(2, 0) * lx1 + per_mat_tosrc.at<double>(2, 1) * ly1 + per_mat_tosrc.at<double>(2, 2));
 
-	return new_x, new_y;
+	new_lx2 = (per_mat_tosrc.at<double>(0, 0) * lx2 + per_mat_tosrc.at<double>(0, 1) * ly2 + per_mat_tosrc.at<double>(0, 2)) /
+		(per_mat_tosrc.at<double>(2, 0) * lx2 + per_mat_tosrc.at<double>(2, 1) * ly2 + per_mat_tosrc.at<double>(2, 2));
+
+	new_ly2 = (per_mat_tosrc.at<double>(1, 0) * lx2 + per_mat_tosrc.at<double>(1, 1) * ly2 + per_mat_tosrc.at<double>(1, 2)) /
+		(per_mat_tosrc.at<double>(2, 0) * lx2 + per_mat_tosrc.at<double>(2, 1) * ly2 + per_mat_tosrc.at<double>(2, 2));
+
+	int new_rx1, new_ry1, new_rx2, new_ry2;
+	new_rx1 = (per_mat_tosrc.at<double>(0, 0) * rx1 + per_mat_tosrc.at<double>(0, 1) * ry1 + per_mat_tosrc.at<double>(0, 2)) /
+		(per_mat_tosrc.at<double>(2, 0) * rx1 + per_mat_tosrc.at<double>(2, 1) * ry1 + per_mat_tosrc.at<double>(2, 2));
+
+	new_ry1 = (per_mat_tosrc.at<double>(1, 0) * rx1 + per_mat_tosrc.at<double>(1, 1) * ry1 + per_mat_tosrc.at<double>(1, 2)) /
+		(per_mat_tosrc.at<double>(2, 0) * rx1 + per_mat_tosrc.at<double>(2, 1) * ry1 + per_mat_tosrc.at<double>(2, 2));
+
+	new_rx2 = (per_mat_tosrc.at<double>(0, 0) * rx2 + per_mat_tosrc.at<double>(0, 1) * ry2 + per_mat_tosrc.at<double>(0, 2)) /
+		(per_mat_tosrc.at<double>(2, 0) * rx2 + per_mat_tosrc.at<double>(2, 1) * ry2 + per_mat_tosrc.at<double>(2, 2));
+
+	new_ry2 = (per_mat_tosrc.at<double>(1, 0) * rx2 + per_mat_tosrc.at<double>(1, 1) * ry2 + per_mat_tosrc.at<double>(1, 2)) /
+		(per_mat_tosrc.at<double>(2, 0) * rx2 + per_mat_tosrc.at<double>(2, 1) * ry2 + per_mat_tosrc.at<double>(2, 2));
+
+
+	lnew_line.push_back(Point(new_lx1, new_ly1)); lnew_line.push_back(Point(new_lx2, new_ly2));
+	rnew_line.push_back(Point(new_rx1, new_ry1)); rnew_line.push_back(Point(new_rx2, new_ry2));
+
+
+	line(frame, Point(new_lx1, new_ly1), Point(new_lx2, new_ly2), Scalar(0, 255, 255), 2);
+	line(frame, Point(new_rx1, new_ry1), Point(new_rx2, new_ry2), Scalar(0, 255, 255), 2);
+
+
+	return lnew_line, rnew_line;
 }
 
-Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, int w, int h,
+vector<Point> n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, int w, int h,
 	vector<Point>& lpoints, vector<Point>& rpoints, Mat per_mat_tosrc, Mat frame) {
 	// define constant for sliding window
 	int nwindows = 12;
@@ -106,13 +134,14 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 		int rnonzero = countNonZero(rhigh_vector);
 
 
-		// 255인 픽셀의 개수가 threshold를 넘으면, 방금 구했던 255 픽셀 시작 지점과 끝 지점의 중앙 값을 다음 window의 중앙으로 잡는다.
+		// 방금 구했던 255 픽셀 시작 지점과 끝 지점의 중앙 값을 다음 window의 중앙으로 잡는다.
 		if (lnonzero >= pixel_thres) {
 			left_start = (ll + lr) / 2;
 		}
 		if (rnonzero >= pixel_thres) {
 			right_start = (rl + rr) / 2;
 		}
+
 
 		// 차선 중앙과 탐지한 차선과의 거리 측정
 		int lane_mid = (right_start + left_start) / 2;
@@ -183,12 +212,9 @@ Vec4f n_window_sliding(int left_start, int right_start, Mat roi, Mat v_thres, in
 	line(roi, Point(rx1, ry1), Point(rx2, ry2), Scalar(0, 100, 200), 3);
 	line(roi, Point(mx1, my1), Point(mx2, my2), Scalar(0, 0, 255), 3);
 
-	int warp_lx1, warp_ly1 = matrix_oper(frame, per_mat_tosrc, lx1, ly1);
-	int warp_lx2, warp_ly2 = matrix_oper(frame, per_mat_tosrc, lx2, ly2);
-	int warp_rx1, warp_ry1 = matrix_oper(frame, per_mat_tosrc, rx1, ry1);
-	int warp_rx2, warp_ry2 = matrix_oper(frame, per_mat_tosrc, rx2, ry2);
+	vector<Point> warp_left_line, warp_right_line = matrix_oper(frame, per_mat_tosrc, lx1, ly1, lx2, ly2, rx1, ry1, rx2, ry2);
 
-	return left_line, right_line;
+	return warp_left_line, warp_right_line;
 }
 
 void find_xPoint(Mat img, Mat per_mat_tosrc, int& lpos, int& rpos, int ans_offset = 395, int width = 640, int height = 480) {
@@ -247,7 +273,7 @@ int main()
 	Mat per_mat_tosrc = getPerspectiveTransform(dst_pts, src_pts);
 
 	Mat frame, roi;
-	Vec4f left_line, right_line;
+	vector<Point> left_line, right_line;
 	vector<Point> lpoints(12), rpoints(12);
 
 	while (true) {
